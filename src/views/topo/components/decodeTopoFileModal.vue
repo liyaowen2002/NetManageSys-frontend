@@ -1,14 +1,16 @@
 <template>
   <!-- 拓扑预览 Dialog -->
-  <el-dialog v-model="dialogVisible" title="拓扑预览" fullscreen>
-    <div ref="previewContainer" class="network-preview"></div>
-    <template #footer>
-      <el-button @click="closeDialog">取消</el-button>
-      <el-button type="primary" :loading="isSaving" @click="saveTopology">
-        {{ isSaving ? '保存中...' : '保存' }}
-      </el-button>
-    </template>
-  </el-dialog>
+  <div>
+    <el-dialog v-model="dialogVisible" title="拓扑预览" fullscreen body-class="test">
+      <div ref="previewContainer" class="network-preview"></div>
+      <template #footer>
+        <el-button @click="closeDialog">取消</el-button>
+        <el-button type="primary" :loading="isSaving" @click="saveTopology">
+          {{ isSaving ? '保存中...' : '保存' }}
+        </el-button>
+      </template>
+    </el-dialog>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -16,11 +18,11 @@ import { ref, nextTick } from 'vue'
 import { Network } from 'vis-network'
 import { ElMessage } from 'element-plus'
 import { v4 as uuidv4 } from 'uuid' // 引入 uuid 库
-
+import { updateTopo } from '@/api/http/topo'
 const previewContainer = ref<HTMLDivElement | null>(null)
 const dialogVisible = ref(false) // 控制 el-dialog 显示
 const isSaving = ref(false) // 控制保存按钮的 loading 状态
-
+const emits = defineEmits(['handleUpdateTopoData'])
 const previewNetwork = ref<Network | null>(null)
 const topologyData = ref<{ nodes: any[]; edges: any[]; notes: any[] }>({
   nodes: [],
@@ -30,9 +32,9 @@ const topologyData = ref<{ nodes: any[]; edges: any[]; notes: any[] }>({
 
 // 解析 .net 文件
 const parseTopologyData = (text: string) => {
-  const nodes: any[] = []
-  const edges: any[] = []
-  const notes: any[] = []
+  const nodes = []
+  const edges = []
+  const notes = []
   const labelToId: Record<string, string> = {} // 改为使用 string 类型的 id
 
   const lines = text.split('\n')
@@ -187,10 +189,16 @@ const beforeUpload = (file: File) => {
 // 保存拓扑
 const saveTopology = async () => {
   isSaving.value = true
-
   try {
-    console.log('当前拓扑数据:', topologyData.value) // 打印 Vis 网络数据
-    ElMessage.success('拓扑数据保存成功！')
+    // 格式化拓扑数据，并为不同类型添加 type
+    const formatTopoData = [
+      ...topologyData.value.edges.map((edge) => ({ ...edge, type: 'edge' })),
+      ...topologyData.value.nodes.map((node) => ({ ...node, type: 'node' })),
+      ...topologyData.value.notes.map((note) => ({ ...note, type: 'note' })),
+    ]
+    console.log(formatTopoData) // 打印转换后的数据
+    await updateTopo(formatTopoData) // 调用 API 进行保存
+    emits('handleUpdateTopoData')
     dialogVisible.value = false // 关闭弹窗
   } catch {
     ElMessage.error('保存失败，请重试！')
@@ -208,8 +216,18 @@ defineExpose({ beforeUpload })
 </script>
 
 <style lang="less" scoped>
+:deep(.test) {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 56px - 67px); /* 减去 header 和 footer 的高度 */
+  overflow: hidden;
+}
 .network-preview {
+  flex: 1;
+  overflow: auto;
   width: 100%;
-  height: 80vh;
+  background-image: linear-gradient(var(--Base-Border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--Base-Border) 1px, transparent 1px);
+  background-size: 25px 25px;
 }
 </style>

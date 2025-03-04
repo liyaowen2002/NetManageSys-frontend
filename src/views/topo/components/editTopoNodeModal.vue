@@ -29,7 +29,7 @@
         </el-collapse>
       </div>
 
-      <div class="footer">
+      <div class="footer p-15">
         <el-button type="primary">保存</el-button>
         <el-button>取消</el-button>
       </div>
@@ -91,6 +91,9 @@ const activeItems = ref('1')
     padding-bottom: 15px;
   }
   .footer {
+    padding-top: 15px;
+    padding-bottom: 15px;
+    text-align: center;
   }
 }
 </style>

@@ -1,14 +1,31 @@
 <template>
-  <div class="topology-container">
+  <div class="topology-container" v-loading="isLoading">
     <div ref="networkContainer" class="network"></div>
     <div class="bottom-bar">
-      <el-upload :show-file-list="false" :before-upload="beforeUpload" accept=".net">
-        <el-button type="primary">从拓扑文件中更新</el-button>
-      </el-upload>
-      <el-button @click="openModal">编辑节点信息</el-button>
+      <input
+        type="file"
+        ref="fileInput"
+        @change="openDecodeTopoFileModal"
+        accept=".net"
+        style="display: none"
+      />
+      <el-button v-show="!isEditingTopo" type="primary" @click="selectFile"
+        >从拓扑文件中更新</el-button
+      >
+
+      <el-button v-show="isEditingTopo" @click="handleNewNode">添加节点</el-button>
+      <el-button v-show="isEditingTopo" @click="handleNewNote">添加文本</el-button>
+      <el-button v-show="isEditingTopo" @click="handleNewEdge">添加连线</el-button>
+      <el-button v-show="isEditingTopo" @click="handleSaveEdit" type="primary">保存修改</el-button>
+      <el-button v-show="isEditingTopo" @click="handleQuitEdit" type="danger">放弃修改</el-button>
+      <el-button v-show="!isEditingTopo" @click="isEditingTopo = true">修改拓扑图</el-button>
     </div>
 
-    <decodeTopoFileModal ref="decodeTopoFileModalRef"></decodeTopoFileModal>
+    <decodeTopoFileModal
+      ref="decodeTopoFileModalRef"
+      :rawTopoData="rawTopoData"
+      @handleUpdateTopoData="getTopoData"
+    ></decodeTopoFileModal>
 
     <transition name="slide-fade">
       <editTopoNodeModal
@@ -21,111 +38,234 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Network, DataSet } from 'vis-network/standalone'
 import decodeTopoFileModal from './components/decodeTopoFileModal.vue'
 import editTopoNodeModal from './components/editTopoNodeModal.vue'
-
-const decodeTopoFileModalRef = ref<typeof decodeTopoFileModal>()
-const editTopoNodeModalRef = ref<typeof editTopoNodeModal>()
+import { getTopo } from '@/api/http/topo'
+import { v4 as uuidv4 } from 'uuid' // 引入 uuid 库
+import { updateTopo } from '@/api/http/topo'
+const isLoading = ref(false)
+const isEditingTopo = ref(false)
+// 定义 ref 的类型
+const decodeTopoFileModalRef = ref<InstanceType<typeof decodeTopoFileModal>>()
+const editTopoNodeModalRef = ref<InstanceType<typeof editTopoNodeModal>>()
 const networkContainer = ref<HTMLDivElement | null>(null)
 const modalVisible = ref(false) // 控制 el-dialog 显示
 const network = ref<Network | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
 
-// 节点数据
-const nodes = new DataSet([
-  // { id: 1, label: 'Core', customData: { ip: '192.168.1.1', role: '核心交换机' } },
-  // { id: 2, label: 'ACC1', customData: { ip: '192.168.1.2', role: '接入交换机' } },
-  // { id: 3, label: 'ACC2', customData: { ip: '192.168.1.3', role: '接入交换机' } },
-  // { id: 4, label: 'Router', customData: { ip: '192.168.1.254', role: '路由器' } },
-  // { id: 5, label: 'PC1', customData: { ip: '192.168.1.100', role: '终端设备' } },
+// 初始化 nodes 和 edges
+const rawTopoData = ref<oneTopoData[]>([])
+const nodes = new DataSet([])
+const edges = new DataSet([])
 
-  {
-    id: 1,
-    label: 'router',
-    x: -410.33333333333337,
-    y: -552.3333333333336,
-    customData: { bindDeviceId: 63 },
-  },
-  {
-    id: 2,
-    label: 'core',
-    x: -416.0476190476191,
-    y: -180.90476190476193,
-    customData: { bindDeviceId: null },
-  },
-  {
-    id: 3,
-    label: 'S6850_3',
-    x: -591.857142857143,
-    y: 8.904761904761884,
-    customData: { bindDeviceId: null },
-  },
-  {
-    id: 4,
-    label: 'PC_4',
-    x: -590.666666666667,
-    y: 250.00000000000006,
-    customData: { bindDeviceId: null },
-  },
-  {
-    id: 5,
-    label: 'S6850_5',
-    x: -192.0000000000001,
-    y: 0.3333333333333215,
-    customData: { bindDeviceId: null },
-  },
-  {
-    id: 6,
-    label: 'PC_6',
-    x: -193.66666666666669,
-    y: 253.33333333333337,
-    customData: { bindDeviceId: null },
-  },
-  {
-    id: 7,
-    label: 'S6850_7',
-    x: -775.0000000000001,
-    y: -182.3333333333334,
-    customData: { bindDeviceId: null },
-  },
-  {
-    id: 8,
-    label: 'Host_1',
-    x: -1066.3333333333333,
-    y: -182.3333333333334,
-    customData: { bindDeviceId: null },
-  },
-])
-
-// 边数据
-const edges = new DataSet([
-  { from: 2, to: 1, label: 'GE_0/1 - GE_0/0', id: '256aa3d6-5405-4174-ad20-3714af07d000' },
-  { from: 3, to: 2, label: 'GE_0/1 - GE_0/2', id: '1cc82d95-f4d8-4e5c-923a-06fc176a5f56' },
-  { from: 4, to: 3, label: 'GE_0/1 - GE_0/2', id: 'f8525481-18dc-46b1-adb8-23dc1f769fa1' },
-  { from: 5, to: 2, label: 'GE_0/1 - GE_0/3', id: 'ffa408ec-ae02-426d-92c4-9c98748f45e8' },
-  { from: 6, to: 5, label: 'GE_0/1 - GE_0/2', id: 'bbcb91ea-0450-4da1-b209-bcf13a7d2c04' },
-  { from: 7, to: 2, label: 'GE_0/1 - GE_0/4', id: 'b3db6db1-40e4-4915-8c87-b30f7a29ae71' },
-  { from: 8, to: 7, label: '环回适配器_0 - GE_0/2', id: 'c62a1325-0c4f-402c-9f9d-473bb32893f5' },
-])
-
-const note = new DataSet([
-  { id: 9, label: '1', x: -790.6666666666667, y: -234.66666666666669, text: '10.10.100.6' },
-  { id: 10, label: '2', x: -1105.666666666667, y: -234.66666666666677, text: '10.10.100.5' },
-  { id: 11, label: '3', x: -202.0000000000001, y: -46.33333333333335, text: '10.10.100.4' },
-  { id: 12, label: '4', x: -691.6190476190479, y: -29.904761904761926, text: '10.10.100.3' },
-  { id: 13, label: '5', x: -452, y: -703.8333333333335, text: '192.168.66.100' },
-  { id: 14, label: '6', x: -457, y: -592.833333333333, text: '192.168.66.200' },
-  { id: 15, label: '7', x: -445.33333333333337, y: -457.8333333333333, text: '10.10.100.2' },
-  { id: 16, label: '8', x: -436, y: -250.5, text: '10.10.100.1' },
-])
-
-const beforeUpload = (file: File) => {
-  decodeTopoFileModalRef.value.beforeUpload(file)
+type oneTopoData = {
+  id: string
+  type: string
+  label: string
+  x: number
+  y: number
+  from: string
+  to: string
+  custom_data: object
 }
 
-const openModal = () => {
-  modalVisible.value = true
+const initFromRawTopoData = () => {
+  // 清空现有的 nodes 和 edges
+  nodes.clear()
+  edges.clear()
+
+  // 遍历接口返回的数据
+  rawTopoData.value.data.forEach((item: oneTopoData) => {
+    if (item.type === 'node' || item.type === 'note') {
+      if (item.type === 'note') {
+        nodes.add({
+          ...item,
+          font: { size: 14 }, // 红色文字
+          shape: 'text', // 只显示文本
+        })
+      } else {
+        nodes.add({ ...item })
+      }
+    } else if (item.type === 'edge') {
+      edges.add({ ...item })
+    }
+  })
+  if (network.value) {
+    network.value.fit()
+  }
+}
+// 获取拓扑数据的函数
+const getTopoData = async () => {
+  try {
+    // 从接口获取数据
+    rawTopoData.value = await getTopo() // 假设 getTopo 是一个返回拓扑数据的 API 调用
+    initFromRawTopoData()
+  } catch (error) {
+    console.error('获取拓扑数据失败:', error)
+  }
+}
+const init = async () => {
+  try {
+    isLoading.value = true
+    await getTopoData()
+  } catch (err) {
+    console.log(err)
+  } finally {
+    isLoading.value = false
+  }
+}
+// 调用函数获取数据
+init()
+
+const openDecodeTopoFileModal = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+  decodeTopoFileModalRef.value?.beforeUpload(file)
+}
+
+const selectFile = () => {
+  if (isEditingTopo.value) return
+  if (fileInput.value) {
+    fileInput.value.value = ''
+    fileInput.value.click() // 触发文件选择窗口
+  }
+}
+
+const handleNewNode = () => {
+  if (!isEditingTopo.value) return
+  const label = prompt('请输入节点名称:')
+  if (label) {
+    const center = network.value?.getViewPosition() // 获取当前视图中心点
+    if (center) {
+      const newNode = {
+        id: uuidv4(), // 生成唯一 ID
+        label,
+        x: center.x,
+        y: center.y,
+        type: 'node',
+      }
+      nodes.add(newNode)
+    }
+  }
+}
+
+const handleNewNote = () => {
+  if (!isEditingTopo.value) return
+  const label = prompt('请输入文本内容:')
+  if (label) {
+    const center = network.value?.getViewPosition() // 获取当前视图中心点
+    if (center) {
+      const newNote = {
+        id: uuidv4(), // 生成唯一 ID
+        label,
+        x: center.x,
+        y: center.y,
+        type: 'note',
+        font: { size: 14 },
+        shape: 'text',
+      }
+      nodes.add(newNote)
+    }
+  }
+}
+
+let firstNodeId: string | null = null // 记录第一个点击的节点 ID
+
+const handleNewEdge = () => {
+  if (!isEditingTopo.value) return
+  if (network.value) {
+    // 进入连线模式
+    network.value.on('click', handleEdgeClick)
+    alert('请依次点击两个节点以创建连线')
+  }
+}
+
+const handleEdgeClick = (params: any) => {
+  if (params.nodes.length > 0) {
+    const nodeId = params.nodes[0]
+    const nodeData = nodes.get(nodeId)
+
+    // 检查节点类型，不能是 note
+    if (nodeData.type === 'note') {
+      alert('不能连接文本节点')
+      return
+    }
+
+    if (!firstNodeId) {
+      // 记录第一个节点
+      firstNodeId = nodeId
+      alert(`已选择第一个节点: ${nodeData.label}`)
+    } else {
+      // 选择第二个节点
+      const label = prompt('请输入连线标签:')
+      if (label) {
+        const newEdge = {
+          id: uuidv4(), // 生成唯一 ID
+          from: firstNodeId,
+          to: nodeId,
+          label,
+          type: 'edge',
+        }
+        edges.add(newEdge)
+      }
+      // 无论是否成功创建连线，都重置状态
+      firstNodeId = null
+      network.value?.off('click', handleEdgeClick) // 退出连线模式
+    }
+  }
+}
+
+const handleSaveEdit = async () => {
+  if (!isEditingTopo.value) return
+  try {
+    isLoading.value = true
+    isEditingTopo.value = false
+
+    // 获取所有节点和边数据
+    const allNodes = nodes.get()
+    const allEdges = edges.get()
+
+    // 处理节点数据，移除 note 类型的 font 和 shape 属性
+    const processedNodes = allNodes.map((node) => {
+      if (node.type === 'note') {
+        // 如果是 note 类型，移除 font 和 shape 属性
+        const { font, shape, ...rest } = node
+        return rest
+      }
+      return node
+    })
+    const res = await updateTopo([...processedNodes, ...allEdges]) // 调用 API 进行保存
+    if (res.type === 'success') {
+      await getTopoData()
+    }
+  } catch (err) {
+    console.log(err)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const handleQuitEdit = () => {
+  if (!isEditingTopo.value) return
+  isEditingTopo.value = false
+  firstNodeId = null // 重置 firstNodeId
+  initFromRawTopoData()
+}
+
+const openEditModal = (nodeId: string) => {
+  const nodeData = nodes.get(nodeId)
+  if (nodeData) {
+    // editForm.value = {
+    //   id: nodeData.id,
+    //   label: nodeData.label,
+    //   x: nodeData.x,
+    //   y: nodeData.y,
+    // }
+    modalVisible.value = true
+  }
 }
 
 onMounted(() => {
@@ -143,15 +283,63 @@ onMounted(() => {
     },
   )
 
-  // 监听鼠标悬停事件
-  network.value.on('hoverNode', (params) => {
-    const nodeId = params.node
-    const nodeData = nodes.get(nodeId) // 获取完整节点数据
-    console.log('悬停节点信息:', nodeData)
-    if (nodeData.customData) {
-      console.log('附加信息:', nodeData.customData)
+  // 监听右键点击事件
+  network.value.on('oncontext', (params) => {
+    if (!isEditingTopo.value) return
+    params.event.preventDefault() // 阻止默认右键菜单
+
+    // 获取右键点击的节点
+    const nodeId = network.value?.getNodeAt({
+      x: params.pointer.DOM.x,
+      y: params.pointer.DOM.y,
+    })
+
+    // 获取右键点击的边
+    const edgeId = network.value?.getEdgeAt({
+      x: params.pointer.DOM.x,
+      y: params.pointer.DOM.y,
+    })
+
+    if (nodeId) {
+      // 右键点击节点
+      if (confirm('确定删除该节点吗？')) {
+        nodes.remove(nodeId)
+        // 删除与该节点相关的边
+        edges.get().forEach((edge) => {
+          if (edge.from === nodeId || edge.to === nodeId) {
+            edges.remove(edge.id)
+          }
+        })
+      }
+    } else if (edgeId) {
+      // 右键点击边
+      if (confirm('确定删除该连线吗？')) {
+        edges.remove(edgeId)
+      }
+    } else {
+      // 右键点击空白区域
+      console.log('右键点击空白区域')
     }
   })
+
+  // 监听双击事件
+  network.value.on('doubleClick', (params) => {
+    if (!isEditingTopo.value) return
+    if (params.nodes.length > 0) {
+      const nodeId = params.nodes[0]
+      const nodeData = nodes.get(nodeId)
+      if (nodeData.type === 'node') {
+        // 只有 node 类型可以触发编辑
+        openEditModal(nodeId)
+      }
+    }
+  })
+})
+onUnmounted(() => {
+  if (network.value) {
+    network.value.off('oncontext')
+    network.value.off('doubleClick')
+  }
 })
 </script>
 
@@ -184,7 +372,8 @@ onMounted(() => {
   border-radius: 5px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   display: flex;
-  gap: 10px;
+  /* gap: 10px; */
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .slide-fade-enter-to,
