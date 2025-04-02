@@ -46,13 +46,15 @@ function quitAccout() {
           inactive-icon="Sunny"
         />
         <el-menu-item index="overview">园区总览</el-menu-item>
-        <el-menu-item index="topo">设备拓扑</el-menu-item>
+        <el-menu-item index="topo">拓扑管理</el-menu-item>
         <el-menu-item index="devices"> 设备列表 </el-menu-item>
-        <el-menu-item index="notification"> 查看通知 </el-menu-item>
+        <el-menu-item index="notification"> 通知管理 </el-menu-item>
         <el-menu-item @click="quitAccout()"> 退出系统 </el-menu-item>
       </el-menu>
 
-      <RouterView style="flex: 1; overflow: hidden" />
+      <div style="flex: 1; overflow: hidden">
+        <RouterView />
+      </div>
     </div>
   </el-config-provider>
 </template>

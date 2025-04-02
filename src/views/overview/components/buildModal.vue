@@ -18,7 +18,7 @@
             </el-col>
             <el-col :span="8">
               <div class="statistic-number">{{ info.deviceOfflineNum }}</div>
-              <div class="statistic-footer">掉线</div>
+              <div class="statistic-footer">离线</div>
             </el-col>
             <el-col :span="8">
               <div class="statistic-number">{{ info.deviceTotalNum }}</div>

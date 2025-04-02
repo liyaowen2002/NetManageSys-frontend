@@ -3,8 +3,10 @@ import router from '@/router'
 import { ElMessage } from 'element-plus'
 
 // 开发环境配置
+// 通过hcl模拟网络
+// const baseURL = 'http://10.1.25.100:5200'
+// 直连本地服务
 const baseURL = 'http://localhost:5200'
-
 declare module 'axios' {
   interface AxiosResponse<T = any> {
     type: string

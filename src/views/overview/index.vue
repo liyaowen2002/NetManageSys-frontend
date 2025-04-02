@@ -102,23 +102,25 @@ const leaveTopoView = () => {
   showInfo.value = true
   threeMapRef.value.leaveTopoView()
 }
-let isIngTopoHighLight = false
-const highLightBuilding = (deviceId) => {
+// let isIngTopoHighLight = false
+const highLightBuilding = (bindBuildingNameENG: string) => {
   // 先判断拓扑图里的设备有没有对应到系统里的设备
-  const deviceInfo = devicesStore.getDevicesListById().value[deviceId]
-  if (deviceInfo) {
-    // 再判断这个设备的建筑有没有在地图中
-    if (buildingNameENGtoCHN[deviceInfo.location]) {
-      threeMapRef.value.highLightTopo(deviceInfo.location)
-      isIngTopoHighLight = true
-    }
-  }
+  // const deviceInfo = devicesStore.getDevicesListById().value[deviceId]
+  // if (deviceInfo) {
+  //   // 再判断这个设备的建筑有没有在地图中
+  //   if (buildingNameENGtoCHN[deviceInfo.location]) {
+  //     threeMapRef.value.highLightTopo(deviceInfo.location)
+  //     isIngTopoHighLight = true
+  //   }
+  // }
+  threeMapRef.value.highLightTopo(bindBuildingNameENG)
 }
 const quitHighLightBuilding = () => {
-  if (isIngTopoHighLight === true) {
-    threeMapRef.value.quitHighLightTopo()
-    isIngTopoHighLight = false
-  }
+  // if (isIngTopoHighLight === true) {
+  //   threeMapRef.value.quitHighLightTopo()
+  //   isIngTopoHighLight = false
+  // }
+  threeMapRef.value.quitHighLightTopo()
 }
 // 获取未读通知数量并按等级统计
 const getNotificationsCounts = async () => {

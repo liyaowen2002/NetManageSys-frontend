@@ -1,7 +1,7 @@
 <template>
   <div class="topology-container" v-loading="isLoading">
     <div ref="networkContainer" class="network"></div>
-    <div class="bottom-bar">
+    <div class="bottom-bar" v-auth="'administrator'">
       <input
         type="file"
         ref="fileInput"
@@ -9,16 +9,26 @@
         accept=".net"
         style="display: none"
       />
-      <el-button v-show="!isEditingTopo" type="primary" @click="selectFile"
-        >从拓扑文件中更新</el-button
+      <el-button v-if="!isEditingTopo" type="primary" @click="selectFile"
+        >从拓扑文件中解析</el-button
       >
 
-      <el-button v-show="isEditingTopo" @click="handleNewNode">添加节点</el-button>
-      <el-button v-show="isEditingTopo" @click="handleNewNote">添加文本</el-button>
-      <el-button v-show="isEditingTopo" @click="handleNewEdge">添加连线</el-button>
-      <el-button v-show="isEditingTopo" @click="handleSaveEdit" type="primary">保存修改</el-button>
-      <el-button v-show="isEditingTopo" @click="handleQuitEdit" type="danger">放弃修改</el-button>
-      <el-button v-show="!isEditingTopo" @click="isEditingTopo = true">修改拓扑图</el-button>
+      <el-button v-if="isEditingTopo" :disabled="isLineing" @click="handleNewNode"
+        >添加节点</el-button
+      >
+      <el-button v-if="isEditingTopo" :disabled="isLineing" @click="handleNewNote"
+        >添加文本</el-button
+      >
+      <el-button v-if="isEditingTopo" :disabled="isLineing" @click="handleNewEdge"
+        >添加连线</el-button
+      >
+      <el-button v-if="isEditingTopo" :disabled="isLineing" @click="handleSaveEdit" type="primary"
+        >保存修改</el-button
+      >
+      <el-button v-if="isEditingTopo" :disabled="isLineing" @click="handleQuitEdit" type="danger"
+        >放弃修改</el-button
+      >
+      <el-button v-if="!isEditingTopo" @click="isEditingTopo = true">修改拓扑图</el-button>
     </div>
 
     <decodeTopoFileModal
@@ -27,13 +37,7 @@
       @handleUpdateTopoData="getTopoData"
     ></decodeTopoFileModal>
 
-    <transition name="slide-fade">
-      <editTopoNodeModal
-        ref="editTopoNodeModalRef"
-        v-show="modalVisible"
-        @closeModal="() => (modalVisible = false)"
-      ></editTopoNodeModal>
-    </transition>
+    <editTopoNodeModal ref="editTopoNodeModalRef"></editTopoNodeModal>
   </div>
 </template>
 
@@ -45,13 +49,14 @@ import editTopoNodeModal from './components/editTopoNodeModal.vue'
 import { getTopo } from '@/api/http/topo'
 import { v4 as uuidv4 } from 'uuid' // 引入 uuid 库
 import { updateTopo } from '@/api/http/topo'
+import { ElMessage } from 'element-plus'
+
 const isLoading = ref(false)
 const isEditingTopo = ref(false)
 // 定义 ref 的类型
 const decodeTopoFileModalRef = ref<InstanceType<typeof decodeTopoFileModal>>()
 const editTopoNodeModalRef = ref<InstanceType<typeof editTopoNodeModal>>()
 const networkContainer = ref<HTMLDivElement | null>(null)
-const modalVisible = ref(false) // 控制 el-dialog 显示
 const network = ref<Network | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -173,13 +178,17 @@ const handleNewNote = () => {
 }
 
 let firstNodeId: string | null = null // 记录第一个点击的节点 ID
-
+const isLineing = ref(false)
 const handleNewEdge = () => {
   if (!isEditingTopo.value) return
   if (network.value) {
+    isLineing.value = true
     // 进入连线模式
     network.value.on('click', handleEdgeClick)
-    alert('请依次点击两个节点以创建连线')
+    ElMessage({
+      message: '请依次点击两个节点以创建连线',
+      type: 'info',
+    })
   }
 }
 
@@ -197,7 +206,11 @@ const handleEdgeClick = (params: any) => {
     if (!firstNodeId) {
       // 记录第一个节点
       firstNodeId = nodeId
-      alert(`已选择第一个节点: ${nodeData.label}`)
+      ElMessage({
+        message: `已选择第一个节点: ${nodeData.label}`,
+        type: 'info',
+      })
+      // alert(`已选择第一个节点: ${nodeData.label}`)
     } else {
       // 选择第二个节点
       const label = prompt('请输入连线标签:')
@@ -212,6 +225,7 @@ const handleEdgeClick = (params: any) => {
         edges.add(newEdge)
       }
       // 无论是否成功创建连线，都重置状态
+      isLineing.value = false
       firstNodeId = null
       network.value?.off('click', handleEdgeClick) // 退出连线模式
     }
@@ -258,13 +272,7 @@ const handleQuitEdit = () => {
 const openEditModal = (nodeId: string) => {
   const nodeData = nodes.get(nodeId)
   if (nodeData) {
-    // editForm.value = {
-    //   id: nodeData.id,
-    //   label: nodeData.label,
-    //   x: nodeData.x,
-    //   y: nodeData.y,
-    // }
-    modalVisible.value = true
+    editTopoNodeModalRef.value.openModal(nodeData)
   }
 }
 
@@ -285,7 +293,7 @@ onMounted(() => {
 
   // 监听右键点击事件
   network.value.on('oncontext', (params) => {
-    if (!isEditingTopo.value) return
+    if (!isEditingTopo.value || isLineing.value) return
     params.event.preventDefault() // 阻止默认右键菜单
 
     // 获取右键点击的节点
@@ -324,7 +332,7 @@ onMounted(() => {
 
   // 监听双击事件
   network.value.on('doubleClick', (params) => {
-    if (!isEditingTopo.value) return
+    if (isEditingTopo.value) return
     if (params.nodes.length > 0) {
       const nodeId = params.nodes[0]
       const nodeData = nodes.get(nodeId)
@@ -356,9 +364,10 @@ onUnmounted(() => {
 .network {
   width: 100%;
   height: 100%;
-  background-image: linear-gradient(var(--Base-Border) 1px, transparent 1px),
+  /* background-image: linear-gradient(var(--Base-Border) 1px, transparent 1px),
     linear-gradient(90deg, var(--Base-Border) 1px, transparent 1px);
-  background-size: 25px 25px;
+  background-size: 25px 25px; */
+  background-image: url(topoBG.svg);
 }
 
 .bottom-bar {

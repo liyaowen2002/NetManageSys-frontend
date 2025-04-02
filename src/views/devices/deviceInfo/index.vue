@@ -7,6 +7,9 @@
       <template #title>
         <span>返回</span>
       </template>
+      <template #extra>
+        <el-button type="primary" @click="openNewTabForTopo">查看拓扑图</el-button>
+      </template>
     </el-page-header>
 
     <div style="flex: 1; box-sizing: border-box; padding: 0px 15px 15px 15px">
@@ -26,7 +29,8 @@
         <el-tab-pane label="ARP">
           <arpTab :deviceId="deviceId" />
         </el-tab-pane>
-        <el-tab-pane label="SSH">
+        <!-- 不知道为什么这里用v-auth="'administrator'"不生效 -->
+        <el-tab-pane label="SSH" v-if="accoutInfo.role === 'administrator'">
           <sshTab :deviceId="deviceId" />
         </el-tab-pane>
       </el-tabs>
@@ -42,6 +46,8 @@ import hardwareTab from './components/hardwareTab.vue'
 import sshTab from './components/sshTab.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDevicesStore } from '@/stores/devices'
+import { useAccoutStore } from '@/stores/accout'
+const accoutInfo = useAccoutStore()
 const devicesStore = useDevicesStore()
 const router = useRouter()
 const route = useRoute()
@@ -50,6 +56,10 @@ const deviceId = Number(route.query.id)
 
 const backRouter = () => {
   router.back()
+}
+const openNewTabForTopo = () => {
+  const fullPath = window.location.origin + '/topo'
+  window.open(fullPath)
 }
 </script>
 <style lang="less" scoped></style>

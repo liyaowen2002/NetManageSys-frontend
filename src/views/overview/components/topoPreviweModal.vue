@@ -42,34 +42,17 @@ const getTopoData = async () => {
     // 遍历接口返回的数据
     res.data.forEach((item: oneTopoData) => {
       if (item.type === 'node' || item.type === 'note') {
-        // 处理节点数据
-        const node = {
-          id: item.id,
-          label: item.label,
-          x: item.x,
-          y: item.y,
-          customData: item.custom_data ? item.custom_data : {}, // 解析 JSON 字符串
-        }
-
-        // 如果是 note 类型，添加特定样式
         if (item.type === 'note') {
-          node.font = { size: 14 } // 红色文字
-          node.shape = 'text' // 只显示文本
+          nodes.add({
+            ...item,
+            font: { size: 14 }, // 红色文字
+            shape: 'text', // 只显示文本
+          })
+        } else {
+          nodes.add({ ...item })
         }
-
-        // 添加到 nodes
-        nodes.add(node)
       } else if (item.type === 'edge') {
-        // 处理边数据
-        const edge = {
-          id: item.id,
-          from: item.from,
-          to: item.to,
-          label: item.label,
-        }
-
-        // 添加到 edges
-        edges.add(edge)
+        edges.add({ ...item })
       }
     })
 
@@ -107,7 +90,8 @@ onMounted(() => {
   // 监听鼠标悬停事件
   network.value.on('hoverNode', (params) => {
     const nodeData = nodes.get(params.node) // 获取完整节点数据
-    emits('highLightBuilding', nodeData.customData.bindDeviceId)
+    if (nodeData.bindBuildingNameENG !== null)
+      emits('highLightBuilding', nodeData.bindBuildingNameENG)
   })
   network.value.on('blurNode', () => {
     emits('quitHighLightBuilding')
@@ -148,9 +132,7 @@ onUnmounted(() => {
   transform-origin: top right; /* 设置变换基点在右上角 */
   overflow: hidden;
   border-radius: 60px;
-  background-image: linear-gradient(var(--Base-Border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--Base-Border) 1px, transparent 1px);
-  background-size: 25px 25px;
+  background-image: url(topoBG.svg);
   background-color: var(--background-white-transparent-1);
   backdrop-filter: blur(15px);
   box-shadow: var(--el-box-shadow);

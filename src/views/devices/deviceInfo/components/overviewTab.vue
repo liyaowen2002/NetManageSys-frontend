@@ -29,7 +29,7 @@
                 <el-input v-model="deviceInfo.name" :disabled="flagVar['name'].notEditing">
                 </el-input>
               </div>
-              <div class="formIconGroup">
+              <div class="formIconGroup" v-auth="'administrator'">
                 <el-icon
                   class="editIcon"
                   @click="flagVar['name'].notEditing = false"
@@ -64,7 +64,7 @@
                   ></el-option>
                 </el-select>
               </div>
-              <div class="formIconGroup">
+              <div class="formIconGroup" v-auth="'administrator'">
                 <el-icon
                   class="editIcon"
                   @click="flagVar['location'].notEditing = false"
@@ -84,35 +84,6 @@
                   ><Close
                 /></el-icon>
               </div>
-
-              <!-- <el-input
-                v-model="deviceInfo.location"
-                :disabled="flagVar['location'].notEditing"
-                v-loading="flagVar['location'].isSaving"
-              >
-                <template #append>
-                  <div style="display: flex; gap: 2px">
-                    <el-icon
-                      class="editIcon"
-                      @click="flagVar['location'].notEditing = false"
-                      v-show="flagVar['location'].notEditing"
-                      ><Edit
-                    /></el-icon>
-                    <el-icon
-                      class="editIcon"
-                      v-show="!flagVar['location'].notEditing"
-                      @click="saveSysInfoEdit('location')"
-                      ><Check
-                    /></el-icon>
-                    <el-icon
-                      class="editIcon"
-                      @click="flagVar['location'].notEditing = true"
-                      v-show="!flagVar['location'].notEditing"
-                      ><Close
-                    /></el-icon>
-                  </div>
-                </template>
-              </el-input> -->
             </el-form-item>
           </el-col>
         </el-row>
@@ -124,7 +95,7 @@
               :disabled="flagVar['contact'].notEditing"
             ></el-input>
           </div>
-          <div class="formIconGroup">
+          <div class="formIconGroup" v-auth="'administrator'">
             <el-icon
               class="editIcon"
               @click="flagVar['contact'].notEditing = false"
@@ -150,7 +121,7 @@
           <div style="flex: 1">
             <el-input v-model="deviceInfo.note" :disabled="flagVar['note'].notEditing"></el-input>
           </div>
-          <div class="formIconGroup">
+          <div class="formIconGroup" v-auth="'administrator'">
             <el-icon
               class="editIcon"
               @click="flagVar['note'].notEditing = false"

@@ -16,14 +16,8 @@ const buildingNameENGtoCHN: Record<string, string> = {
   ringBuilding: '环楼',
   informationCenter: '信息中心',
   theSideTower: '边楼',
-  bungalow1: '平房1',
-  bungalow2: '平房2',
-  bungalow3: '平房3',
-  bungalow4: '平房4',
-  warehouse1: '仓库1',
-  warehouse2: '仓库2',
-  warehouse3: '仓库3',
-  warehouse4: '仓库4',
+  bungalow: '平房',
+  warehouse: '仓库',
 }
 
 export { formatTimeTicks, buildingNameENGtoCHN }

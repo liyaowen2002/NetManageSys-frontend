@@ -56,48 +56,50 @@
   </el-backtop> -->
 
   <!-- 新增设备 -->
-  <el-backtop
-    :right="120"
-    :bottom="100"
-    :visibility-height="0"
-    @click="() => (addDeviceDrawer.drawerVisible = true)"
-    v-show="isRemoving === false"
-  >
-    <el-icon :size="20"><Plus /></el-icon>
-  </el-backtop>
+  <div v-auth="'administrator'">
+    <el-backtop
+      :right="120"
+      :bottom="100"
+      :visibility-height="0"
+      @click="() => (addDeviceDrawer.drawerVisible = true)"
+      v-show="isRemoving === false"
+    >
+      <el-icon :size="20"><Plus /></el-icon>
+    </el-backtop>
 
-  <!-- 移除设备 -->
-  <el-backtop
-    :right="60"
-    :bottom="100"
-    :visibility-height="0"
-    @click="() => (isRemoving = true)"
-    v-show="isRemoving === false"
-  >
-    <el-icon :size="20" color="#F56C6C"><Delete /></el-icon>
-  </el-backtop>
+    <!-- 移除设备 -->
+    <el-backtop
+      :right="60"
+      :bottom="100"
+      :visibility-height="0"
+      @click="() => (isRemoving = true)"
+      v-show="isRemoving === false"
+    >
+      <el-icon :size="20" color="#F56C6C"><Delete /></el-icon>
+    </el-backtop>
 
-  <!-- 确认移除 -->
-  <el-backtop
-    :right="60"
-    :bottom="100"
-    :visibility-height="0"
-    v-show="isRemoving === true"
-    @click="removeDevices()"
-  >
-    <el-icon :size="20" color="#F56C6C"><Check /></el-icon>
-  </el-backtop>
+    <!-- 确认移除 -->
+    <el-backtop
+      :right="60"
+      :bottom="100"
+      :visibility-height="0"
+      v-show="isRemoving === true"
+      @click="removeDevices()"
+    >
+      <el-icon :size="20" color="#F56C6C"><Check /></el-icon>
+    </el-backtop>
 
-  <!-- 取消移除 -->
-  <el-backtop
-    :right="120"
-    :bottom="100"
-    :visibility-height="0"
-    v-show="isRemoving === true"
-    @click="quitRemoving()"
-  >
-    <el-icon :size="20" color="#F56C6C"><Close /></el-icon>
-  </el-backtop>
+    <!-- 取消移除 -->
+    <el-backtop
+      :right="120"
+      :bottom="100"
+      :visibility-height="0"
+      v-show="isRemoving === true"
+      @click="quitRemoving()"
+    >
+      <el-icon :size="20" color="#F56C6C"><Close /></el-icon>
+    </el-backtop>
+  </div>
 </template>
 
 <script setup lang="ts">

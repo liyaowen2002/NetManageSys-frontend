@@ -54,12 +54,15 @@ const parseTopologyData = (text: string) => {
       return
     }
 
+    // 如果监测到[[]]代表开始新的一个节点，就先存起来旧节点，初始化一个新节点
     if (line.startsWith('[[') && line.endsWith(']]')) {
       if (currentNode) {
         if (nodeType === 'device') {
+          // console.log(currentNode)
           nodes.push(currentNode)
           labelToId[currentNode.label] = currentNode.id
         } else if (nodeType === 'NOTE') {
+          console.log(currentNode)
           notes.push(currentNode)
         }
         currentNode = null
@@ -75,8 +78,10 @@ const parseTopologyData = (text: string) => {
         x: null,
         y: null,
       }
+      nodeType = null
     }
 
+    // 对各种属性进行解析
     if (line.includes('=') && currentNode) {
       const match = line.match(/(\S+) = (.+)/)
       if (match) {
@@ -86,6 +91,9 @@ const parseTopologyData = (text: string) => {
           currentNode.x = parseFloat(val)
         } else if (key === 'y') {
           currentNode.y = parseFloat(val)
+        } else if (key === 'interface') {
+          // 如果发现是interface代表是，打开了显示设备接口的设置带来的文本，直接不存储这个文本
+          return (currentNode = null)
         } else if (key === 'text') {
           currentNode.label = val.slice(1, -1)
           nodeType = 'NOTE'
@@ -127,7 +135,7 @@ const parseTopologyData = (text: string) => {
       notes.push(currentNode)
     }
   }
-
+  console.log(nodes, edges, notes)
   return { nodes, edges, notes }
 }
 

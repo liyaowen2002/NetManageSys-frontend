@@ -7,3 +7,7 @@ export function updateTopo(params) {
 export function getTopo() {
   return http.get('/topoManage/getTopo', { showMsg: false })
 }
+
+export function bindBuilding(params) {
+  return http.post('/topoManage/bindBuilding', params)
+}

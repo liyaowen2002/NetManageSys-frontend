@@ -56,5 +56,9 @@ if (localStorage.getItem('authToken')) {
   router.replace('/login')
 }
 
+// 注册鉴权指令
+import authDirective from '@/directives/auth'
+app.directive('auth', authDirective)
+
 // 准备好一切后再挂载
 app.mount('#app')

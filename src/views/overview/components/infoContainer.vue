@@ -1,69 +1,11 @@
 <template>
   <div class="infoContainer">
     <div class="greeting">{{ greeting }}，{{ accoutInfo.nickname }}。</div>
-    <!-- <div class="buttonGroup">
-      <div>
-        <el-button type="primary" round icon="Platform" @click="router.replace('/devices')">
-          在线设备：{{ onlineDevicesCount }} / {{ allDevicesCount }}
-        </el-button>
-      </div>
-      <div
-        v-if="
-          props.notificationCountByLevel.warningCount === 0 &&
-          props.notificationCountByLevel.errorCount === 0
-        "
-      >
-        <el-button
-          type="primary"
-          round
-          icon="CircleCheckFilled"
-          @click="router.replace('/notification')"
-        >
-          暂无危险通知
-        </el-button>
-      </div>
-      <div>
-        <el-button
-          type="warning"
-          round
-          icon="WarnTriangleFilled"
-          @click="router.replace('/notification')"
-        >
-          警告：{{ props.notificationCountByLevel.warningCount }}
-        </el-button>
-      </div>
-      <div>
-        <el-button
-          type="danger"
-          round
-          icon="CircleCloseFilled"
-          @click="router.replace('/notification')"
-        >
-          错误：{{ props.notificationCountByLevel.errorCount }}
-        </el-button>
-      </div>
-      <div>
-        <el-button
-          type="success"
-          round
-          icon="CircleCheckFilled"
-          @click="router.replace('/notification')"
-        >
-          成功：{{ props.notificationCountByLevel.successCount }}
-        </el-button>
-      </div>
-      <div>
-        <el-button type="info" round icon="InfoFilled" @click="router.replace('/notification')"
-          >新日志：{{ newLogCount }}</el-button
-        >
-      </div>
-      <div v-if="props.notificationCountByLevel.totalCount !== 0">
-        <el-button round icon="BrushFilled" @click="handleMarkAllAsRead">一键已读</el-button>
-      </div>
-    </div> -->
-    <div v-if="props.notificationCountByLevel.totalCount !== 0">
+    <div>
       <el-button type="primary" round icon="BrushFilled" @click="handleMarkAllAsRead"
-        >通知：一键已读</el-button
+        >通知：{{
+          props.notificationCountByLevel.totalCount === 0 ? '暂无更多通知' : '一键已读所有通知'
+        }}</el-button
       >
     </div>
     <div>
@@ -105,6 +47,13 @@
           </div>
         </el-col>
       </el-row>
+    </div>
+    <div class="notificationCard default">
+      <el-icon class="icon" size="60"><OfficeBuilding /></el-icon>
+      <div class="text">
+        <div class="title">园区建筑数量：</div>
+        <div class="count">{{ Object.keys(onlineDevicesCount).length }}</div>
+      </div>
     </div>
     <div class="card">
       <levelTitle type="h3" text="在线设备" style="margin-top: 0px"> </levelTitle>
@@ -206,6 +155,7 @@ const onlineDevicesCount = ref<
 // 处理一键已读
 const handleMarkAllAsRead = async () => {
   try {
+    if (props.notificationCountByLevel.totalCount === 0) return
     const response = await markAsReadByDefalutFilter() // 调用API来标记为已读
     if (response.type === 'success') {
       emits('updateNotification')
@@ -259,17 +209,8 @@ watch(
     font-weight: lighter;
   }
 
-  // .buttonGroup {
-  //   display: flex;
-  //   flex-direction: column;
-  //   gap: 10px;
-  // }
-  // .el-button + .el-button {
-  //   margin-left: 0px;
-  // }
   .notificationCard {
     position: relative;
-    // height: 50px;
     background-color: var(--background-white-transparent-1);
     border-radius: var(--el-border-radius-base);
     overflow: hidden;
@@ -319,6 +260,28 @@ watch(
     box-shadow:
       rgba(245, 108, 108, 0.2) 0px 12px 32px 4px,
       rgba(245, 108, 108, 0.3) 0px 8px 20px 0px;
+  }
+  .notificationCard.default {
+    background-color: var(--background-white-transparent-1);
+    box-shadow: var(--el-box-shadow);
+    backdrop-filter: blur(15px);
+    .text {
+      color: var(--Secondary-Text);
+      .title {
+        line-height: 50px;
+        font-size: 20px;
+        margin-left: 20px;
+      }
+      .count {
+        margin-right: 13px;
+      }
+    }
+    .icon {
+      color: var(--Darker-Fill);
+      z-index: -1;
+      left: 0px;
+      bottom: -8px;
+    }
   }
   .card {
     background-color: var(--background-white-transparent-1);
