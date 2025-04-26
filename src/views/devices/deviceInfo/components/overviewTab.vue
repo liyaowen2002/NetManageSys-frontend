@@ -44,7 +44,7 @@
                 /></el-icon>
                 <el-icon
                   class="editIcon"
-                  @click="flagVar['name'].notEditing = true"
+                  @click="cancelChange('name')"
                   v-show="!flagVar['name'].notEditing"
                   ><Close
                 /></el-icon>
@@ -79,7 +79,7 @@
                 /></el-icon>
                 <el-icon
                   class="editIcon"
-                  @click="flagVar['location'].notEditing = true"
+                  @click="cancelChange('location')"
                   v-show="!flagVar['location'].notEditing"
                   ><Close
                 /></el-icon>
@@ -110,7 +110,7 @@
             /></el-icon>
             <el-icon
               class="editIcon"
-              @click="flagVar['contact'].notEditing = true"
+              @click="cancelChange('contact')"
               v-show="!flagVar['contact'].notEditing"
               ><Close
             /></el-icon>
@@ -136,7 +136,7 @@
             /></el-icon>
             <el-icon
               class="editIcon"
-              @click="flagVar['note'].notEditing = true"
+              @click="cancelChange('note')"
               v-show="!flagVar['note'].notEditing"
               ><Close
             /></el-icon>
@@ -164,18 +164,13 @@
 <script setup lang="ts">
 import levelTitle from '@/components/levelTitle.vue'
 import { formatTimeTicks } from '@/utils/format'
-import { ref, onMounted, onBeforeUnmount, reactive } from 'vue'
+import { ref, onBeforeUnmount, reactive } from 'vue'
 import { editSysInfo, getDeviceInfo } from '@/api/http/deviceConfig'
 import { Edit, Check, Close } from '@element-plus/icons-vue'
 import { useDevicesStore } from '@/stores/devices'
 import { buildingNameENGtoCHN } from '@/utils/format'
-// const form = ref()
 const devicesStore = useDevicesStore()
-const colors = [
-  { color: '#409EFF', percentage: 80 },
-  { color: '#E6A23C', percentage: 90 },
-  { color: '#F56C6C', percentage: 100 },
-]
+
 const props = defineProps({
   deviceId: {
     type: Number,
@@ -225,6 +220,18 @@ const deviceInfo = ref({
   model: '',
   note: '',
 })
+let deviceInfo_backup = {
+  name: '',
+  status: '',
+  ip: '',
+  location: '',
+  contact: '',
+  uptime: [0, 0, 0],
+  description: '',
+  manufacturer: '',
+  model: '',
+  note: '',
+}
 
 const flagVar = reactive({
   name: {
@@ -260,6 +267,7 @@ const getInfo = async () => {
       ...res.data,
       uptime: formatTimeTicks(res.data.uptime),
     }
+    deviceInfo_backup = JSON.parse(JSON.stringify({ ...deviceInfo.value }))
 
     // **确保 uptime 赋值完成后，启动定时器**
     startTimers()
@@ -326,12 +334,11 @@ const saveSysInfoEdit = async (key: keyof typeof flagVar) => {
     // console.log(form.value)
     // await form.value.validate(async (valid: boolean) => {
     //   if (valid) {
-    const res = await editSysInfo({
+    await editSysInfo({
       id: props.deviceId,
       key,
       value: deviceInfo.value[key],
     })
-    console.log(res)
     flagVar[key].notEditing = true
     if (key !== 'note') {
       devicesStore.updateDevicesList()
@@ -341,9 +348,15 @@ const saveSysInfoEdit = async (key: keyof typeof flagVar) => {
     // })
   } catch (error) {
     console.error(error)
+    deviceInfo_backup = JSON.parse(JSON.stringify({ ...deviceInfo.value }))
   } finally {
     flagVar[key].isSaving = false
   }
+}
+
+const cancelChange = (key: keyof typeof flagVar) => {
+  flagVar[key].notEditing = true
+  deviceInfo.value[key] = JSON.parse(JSON.stringify(deviceInfo_backup[key]))
 }
 </script>
 <style lang="less" scoped>

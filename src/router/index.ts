@@ -16,9 +16,6 @@ const router = createRouter({
       path: '/overview',
       name: 'overview',
       component: overview,
-      meta: {
-        keepAlive: true,
-      },
     },
     {
       path: '/devices',

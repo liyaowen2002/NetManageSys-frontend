@@ -11,7 +11,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, onBeforeUnmount } from 'vue'
+import { onMounted, ref, onBeforeUnmount, onActivated, onDeactivated } from 'vue'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
@@ -19,6 +19,10 @@ import * as TWEEN from 'three/examples/jsm/libs/tween.module.js' // 用于平滑
 
 const props = defineProps({
   notificationCountByLocation: {
+    type: Object,
+    required: true,
+  },
+  canColorBuilding: {
     type: Object,
     required: true,
   },
@@ -47,6 +51,7 @@ const emits = defineEmits([
   'openModal',
   'closeModalOnly',
   'getInfoToUpdate',
+  'modelInitEND',
 ])
 
 // 初始化函数
@@ -87,8 +92,10 @@ const initThreeJS = () => {
           child.material.transparent = true
         }
       })
+
       model.scale.set(0.01, 0.01, 0.01)
       scene.add(model)
+      emits('modelInitEND')
     },
     undefined,
     (error) => {
@@ -180,38 +187,39 @@ const highLightBuilding = (
   isTransparentOther: boolean,
 ) => {
   model.traverse((child) => {
-    if (child.isMesh)
-      if (child.name === buildingName) {
-        // 根据传进来的需求，将点击的建筑变成对应的颜色
-        switch (type) {
-          case 'error':
-            child.material.matcap = errorTexture
-            break
-          case 'warning':
-            child.material.matcap = warningTexture
-            break
-          case 'select':
-            child.material.matcap = seletedTexture
-            break
-        }
-        // 将透明度变回1
-        if (child.material.opacity !== 1)
-          new TWEEN.Tween(child.material)
-            .to({ opacity: 1 }, 1000) // 动画持续时间为 1 秒
-            .easing(TWEEN.Easing.Quadratic.InOut)
-            .start()
-      } else {
-        // 其他建筑的处理
-        if (isTransparentOther === true && child.material.opacity === 1)
-          new TWEEN.Tween(child.material)
-            .to({ opacity: 0.5 }, 500) // 动画持续时间为 1 秒
-            .easing(TWEEN.Easing.Quadratic.InOut)
-            .start()
-        if (isRecoverOther === true && child.material.matcap !== normalTexture)
-          child.material.matcap = normalTexture
+    if (!child.isMesh) return
+    if (child.name === buildingName) {
+      // 根据传进来的需求，将点击的建筑变成对应的颜色
+      switch (type) {
+        case 'error':
+          child.material.matcap = errorTexture
+          break
+        case 'warning':
+          child.material.matcap = warningTexture
+          break
+        case 'select':
+          child.material.matcap = seletedTexture
+          break
       }
+      // 将透明度变回1
+      if (child.material.opacity !== 1)
+        new TWEEN.Tween(child.material)
+          .to({ opacity: 1 }, 1000) // 动画持续时间为 1 秒
+          .easing(TWEEN.Easing.Quadratic.InOut)
+          .start()
+    } else {
+      // 其他建筑的处理
+      if (isTransparentOther === true && child.material.opacity === 1)
+        new TWEEN.Tween(child.material)
+          .to({ opacity: 0.5 }, 500) // 动画持续时间为 1 秒
+          .easing(TWEEN.Easing.Quadratic.InOut)
+          .start()
+      if (isRecoverOther === true && child.material.matcap !== normalTexture)
+        child.material.matcap = normalTexture
+    }
   })
 }
+
 // 这里恢复颜色和透明度
 const quitHighLightBuilding = () => {
   model.traverse((child) => {
@@ -257,7 +265,7 @@ defineExpose({
 })
 
 // Vue生命周期钩子
-onMounted(() => {
+onMounted(async () => {
   initThreeJS()
   animate()
   window.addEventListener('resize', onResize)
@@ -275,37 +283,26 @@ onBeforeUnmount(() => {
 
 // 移动视角
 const moveLens = (target: string) => {
+  let preset = { position: null, target: null }
   switch (target) {
     case 'init':
-      new TWEEN.Tween(camera.position)
-        .to(initialCamera.position, 1000) // 动画持续 1 秒
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .start()
-      new TWEEN.Tween(controls.target)
-        .to(initialCamera.target, 1000)
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .start()
+      preset = { ...initialCamera }
       break
     case 'topo':
-      new TWEEN.Tween(camera.position)
-        .to(topoPreview.position, 1000) // 动画持续 1 秒
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .start()
-      new TWEEN.Tween(controls.target)
-        .to(topoPreview.target, 1000)
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .start()
+      preset = { ...topoPreview }
       break
     default:
-      new TWEEN.Tween(camera.position)
-        .to(cameraPositions[target].position || initialCamera.position, 1000) // 动画持续 1 秒
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .start()
-      new TWEEN.Tween(controls.target)
-        .to(cameraPositions[target].target || initialCamera.target, 1000)
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .start()
+      preset.position = cameraPositions[target].position || initialCamera.position
+      preset.target = cameraPositions[target].target || initialCamera.target
   }
+  new TWEEN.Tween(camera.position)
+    .to(preset.position, 1000)
+    .easing(TWEEN.Easing.Quadratic.InOut)
+    .start()
+  new TWEEN.Tween(controls.target)
+    .to(preset.target, 1000)
+    .easing(TWEEN.Easing.Quadratic.InOut)
+    .start()
 }
 // 记录相机的初始位置
 const initialCamera = {

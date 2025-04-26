@@ -61,16 +61,16 @@ function quitAccout() {
         <el-menu-item @click="quitAccout()">⏏️ 退出系统</el-menu-item>
       </el-menu>
 
-      <transition name="routerViewSlide">
+      <!-- <transition name="routerViewSlide">
         <RouterView style="flex: 1; overflow: hidden"
-      /></transition>
+      /></transition> -->
 
-      <!-- <RouterView v-slot="{ Component, route }">
+      <RouterView v-slot="{ Component, route }">
         <Transition name="routerViewSlide">
           <component :is="Component" :key="route.path" style="flex: 1; overflow: hidden">
           </component>
         </Transition>
-      </RouterView> -->
+      </RouterView>
     </div>
   </el-config-provider>
 </template>
@@ -103,20 +103,13 @@ function quitAccout() {
   opacity: 1;
 }
 
-// .routerViewSlide-leave-from {
-//   transform: scale(1); /* 右侧外面 */
-//   opacity: 1;
-// }
+.routerViewSlide-leave-from {
+  display: none;
+}
 
-// .routerViewSlide-leave-active {
-//   transition:
-//     transform 0.35s ease-in-out,
-//     opacity 0.5s ease-in-out;
-// }
+.routerViewSlide-leave-active {
+}
 
-// .routerViewSlide-leave-to {
-//   display: none;
-//   transform: scale(0.98); /* 左侧外面 */
-//   opacity: 0;
-// }
+.routerViewSlide-leave-to {
+}
 </style>

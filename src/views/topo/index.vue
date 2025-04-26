@@ -143,6 +143,13 @@ const handleNewNode = () => {
   if (!isEditingTopo.value) return
   const label = prompt('请输入节点名称:')
   if (label) {
+    if (label.length > 10) {
+      ElMessage({
+        message: '节点名称超过字数限制',
+        type: 'error',
+      })
+      return
+    }
     const center = network.value?.getViewPosition() // 获取当前视图中心点
     if (center) {
       const newNode = {
@@ -154,6 +161,11 @@ const handleNewNode = () => {
       }
       nodes.add(newNode)
     }
+  } else {
+    ElMessage({
+      message: '节点名称不能为空',
+      type: 'error',
+    })
   }
 }
 
@@ -161,6 +173,13 @@ const handleNewNote = () => {
   if (!isEditingTopo.value) return
   const label = prompt('请输入文本内容:')
   if (label) {
+    if (label.length > 20) {
+      ElMessage({
+        message: '文本内容超过字数限制',
+        type: 'error',
+      })
+      return
+    }
     const center = network.value?.getViewPosition() // 获取当前视图中心点
     if (center) {
       const newNote = {
@@ -174,6 +193,11 @@ const handleNewNote = () => {
       }
       nodes.add(newNote)
     }
+  } else {
+    ElMessage({
+      message: '文本内容不能为空',
+      type: 'error',
+    })
   }
 }
 
@@ -199,7 +223,10 @@ const handleEdgeClick = (params: any) => {
 
     // 检查节点类型，不能是 note
     if (nodeData.type === 'note') {
-      alert('不能连接文本节点')
+      ElMessage({
+        message: '不能连接文本节点',
+        type: 'error',
+      })
       return
     }
 
@@ -215,11 +242,26 @@ const handleEdgeClick = (params: any) => {
       // 选择第二个节点
       const label = prompt('请输入连线标签:')
       if (label) {
+        if (label.length > 10) {
+          ElMessage({
+            message: '连线超过字数限制',
+            type: 'error',
+          })
+        } else {
+          const newEdge = {
+            id: uuidv4(), // 生成唯一 ID
+            from: firstNodeId,
+            to: nodeId,
+            label,
+            type: 'edge',
+          }
+          edges.add(newEdge)
+        }
+      } else {
         const newEdge = {
           id: uuidv4(), // 生成唯一 ID
           from: firstNodeId,
           to: nodeId,
-          label,
           type: 'edge',
         }
         edges.add(newEdge)
@@ -228,6 +270,7 @@ const handleEdgeClick = (params: any) => {
       isLineing.value = false
       firstNodeId = null
       network.value?.off('click', handleEdgeClick) // 退出连线模式
+      return
     }
   }
 }

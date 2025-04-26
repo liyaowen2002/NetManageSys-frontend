@@ -24,6 +24,8 @@
       @openModal="openModal"
       @getInfoToUpdate="getInfoToUpdate"
       :notificationCountByLocation="notificationCountByLocation"
+      :canColorBuilding="canColorBuilding"
+      @modelInitEND="modelInitEND"
     ></threeMap>
 
     <transition name="topoPreview">
@@ -40,22 +42,25 @@
 </template>
 
 <script lang="ts" setup>
-import { onUnmounted, ref, onMounted, nextTick } from 'vue'
+import { onUnmounted, ref, nextTick, onActivated, onDeactivated, onMounted } from 'vue'
 import infoContainer from './components/infoContainer.vue'
 import buildModal from './components/buildModal.vue'
 import threeMap from './components/threeMap.vue'
 import topoPreviweModal from './components/topoPreviweModal.vue'
 import { getUnreadCountByLevel, getSetupTimestamp } from '@/api/http/overview'
-import { useDevicesStore } from '@/stores/devices'
-import { buildingNameENGtoCHN } from '@/utils/format'
 
-const devicesStore = useDevicesStore()
 const showModal = ref(false)
 const showInfo = ref(true)
 const showTopo = ref(true)
 const threeMapRef = ref()
 const buildModalRef = ref()
 const topoPreviweModalRef = ref()
+
+// 因为有可能通知请求完后，模型还没初始化完，或者反过来。所有需要两个变量判断是否完成
+const canColorBuilding = {
+  isReqEND: false,
+  isModelInitEND: false,
+}
 
 const notificationCountByLevel = ref({
   errorCount: 0,
@@ -108,7 +113,13 @@ const highLightBuilding = (
 ) => {
   threeMapRef.value.highLightBuilding(bindBuildingNameENG, type, isRecoverOther, isTransparentOther)
 }
+const modelInitEND = () => {
+  canColorBuilding.isModelInitEND = true
 
+  if (canColorBuilding.isModelInitEND && canColorBuilding.isReqEND) {
+    threeMapRef.value.quitHighLightBuilding()
+  }
+}
 // 获取未读通知数量并按等级统计
 const getNotificationsCounts = async () => {
   try {
@@ -122,9 +133,11 @@ const getNotificationsCounts = async () => {
 
     notificationCountByLocation.value = response.data.byLocation
 
-    nextTick(() => {
-      threeMapRef.value.quitHighLightBuilding()
-    })
+    canColorBuilding.isReqEND = true
+
+    if (canColorBuilding.isModelInitEND && canColorBuilding.isReqEND) {
+      nextTick(() => threeMapRef.value.quitHighLightBuilding())
+    }
   } catch (error) {
     console.error('获取数据失败', error)
   }
@@ -155,16 +168,14 @@ const updateTimeCount = () => {
   timeCount.value.seconds = Math.floor(elapsedMilliseconds / 1000)
 }
 
-// 在组件挂载时调用一次数据获取方法
-const init = () => {
-  getNotificationsCounts()
-  getAndSetSetupTimestamp()
-}
-
-init()
-
 onUnmounted(() => {
   clearInterval(timerId)
+})
+
+// 在组件挂载时调用一次数据获取方法
+onMounted(() => {
+  getNotificationsCounts()
+  getAndSetSetupTimestamp()
 })
 </script>
 <style scoped lang="less">

@@ -34,7 +34,7 @@ const emits = defineEmits(['addDevice_sure'])
 
 const formRules = {
   ip: [{ required: true, message: '请输入IP地址', trigger: 'blur' }],
-  type: [{ required: true, message: '设备类型', trigger: 'blur' }],
+  type: [{ required: true, message: '请选择设备类型', trigger: 'blur' }],
 }
 const formRef = ref(null)
 const formData = reactive({

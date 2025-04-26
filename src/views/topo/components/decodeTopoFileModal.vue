@@ -43,6 +43,9 @@ const parseTopologyData = (text: string) => {
 
   lines.forEach((line) => {
     line = line.trim()
+    // 在这层每个IF代表对一种情况的处理
+
+    // 如果以[Non-vBox-DATA]为开始，代表来到非虚拟设备节点部分，存完直接return结束这行
     if (line.startsWith('[Non-vBox-DATA]')) {
       if (nodeType === 'device') {
         nodes.push(currentNode)
@@ -58,7 +61,6 @@ const parseTopologyData = (text: string) => {
     if (line.startsWith('[[') && line.endsWith(']]')) {
       if (currentNode) {
         if (nodeType === 'device') {
-          // console.log(currentNode)
           nodes.push(currentNode)
           labelToId[currentNode.label] = currentNode.id
         } else if (nodeType === 'NOTE') {

@@ -8,9 +8,11 @@
             :key="building"
             :value="building"
             :label="buildingNameENGtoCHN[building]"
-          ></el-option>
-        </el-select> </el-form-item
-    ></el-form>
+          />
+        </el-select>
+      </el-form-item>
+    </el-form>
+
     <template #footer>
       <el-button type="primary" @click="saveTheNodeInfo" :loading="isSaving"> 保存 </el-button>
     </template>

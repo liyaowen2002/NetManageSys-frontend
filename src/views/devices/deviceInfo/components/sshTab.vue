@@ -89,12 +89,14 @@ const errorRealTerminal = (ex: any) => {
   term.value?.write(`\x1b[31m${message}\x1b[m\r\n`)
   console.log('ssh模块的ws连接出错')
   wsOpenStatus.value = false
+  closeSSHConnection()
 }
 
 //WebSocket 连接已关闭
 const closeRealTerminal = () => {
   wsOpenStatus.value = false
   console.log('ssh模块的ws连接关闭')
+  closeSSHConnection()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

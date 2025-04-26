@@ -7,10 +7,15 @@
       </template>
       <el-form :model="userInfo" :rules="rules" ref="loginForm" :hide-required-asterisk="true">
         <el-form-item label="账号" prop="username">
-          <el-input v-model="userInfo.username" />
+          <el-input v-model="userInfo.username" placeholder="请输入账号" />
         </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input v-model="userInfo.password" type="password" show-password />
+          <el-input
+            v-model="userInfo.password"
+            type="password"
+            show-password
+            placeholder="请输入密码"
+          />
         </el-form-item>
       </el-form>
       <el-button type="primary" @click="submitForm" :loading="isLoading"> 登录 </el-button>
@@ -31,8 +36,8 @@ const accoutStore = useAccoutStore()
 const router = useRouter()
 const loginForm = ref<FormInstance>()
 const userInfo = reactive({
-  username: 'admin',
-  password: 'admin',
+  username: '',
+  password: '',
 })
 
 const isLoading = ref(false)
