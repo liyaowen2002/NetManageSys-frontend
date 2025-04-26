@@ -20,7 +20,7 @@
 
     <threeMap
       ref="threeMapRef"
-      @closeModalOnly="closeModalOnly"
+      @closeModalAndExitView="closeModalAndExitView"
       @openModal="openModal"
       @getInfoToUpdate="getInfoToUpdate"
       :notificationCountByLocation="notificationCountByLocation"
@@ -33,14 +33,14 @@
         @enterTopoView="enterTopoView"
         @leaveTopoView="leaveTopoView"
         @highLightBuilding="highLightBuilding"
-        @quitHighLightBuilding="quitHighLightBuilding"
+        @quitHighLightBuilding="threeMapRef.quitHighLightBuilding()"
       ></topoPreviweModal>
     </transition>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { onUnmounted, ref, onMounted } from 'vue'
+import { onUnmounted, ref, onMounted, nextTick } from 'vue'
 import infoContainer from './components/infoContainer.vue'
 import buildModal from './components/buildModal.vue'
 import threeMap from './components/threeMap.vue'
@@ -56,6 +56,7 @@ const showTopo = ref(true)
 const threeMapRef = ref()
 const buildModalRef = ref()
 const topoPreviweModalRef = ref()
+
 const notificationCountByLevel = ref({
   errorCount: 0,
   warningCount: 0,
@@ -75,11 +76,7 @@ let setupTimestamp: null | number = null
 let timerId: ReturnType<typeof setInterval> | null = null
 
 const notificationCountByLocation = ref({})
-const closeModalOnly = () => {
-  showModal.value = false
-  showInfo.value = true
-  showTopo.value = true
-}
+
 const closeModalAndExitView = () => {
   showModal.value = false
   showInfo.value = true
@@ -102,40 +99,32 @@ const leaveTopoView = () => {
   showInfo.value = true
   threeMapRef.value.leaveTopoView()
 }
-// let isIngTopoHighLight = false
-const highLightBuilding = (bindBuildingNameENG: string) => {
-  // 先判断拓扑图里的设备有没有对应到系统里的设备
-  // const deviceInfo = devicesStore.getDevicesListById().value[deviceId]
-  // if (deviceInfo) {
-  //   // 再判断这个设备的建筑有没有在地图中
-  //   if (buildingNameENGtoCHN[deviceInfo.location]) {
-  //     threeMapRef.value.highLightTopo(deviceInfo.location)
-  //     isIngTopoHighLight = true
-  //   }
-  // }
-  threeMapRef.value.highLightTopo(bindBuildingNameENG)
+
+const highLightBuilding = (
+  bindBuildingNameENG: string,
+  type: string,
+  isRecoverOther: boolean,
+  isTransparentOther: boolean,
+) => {
+  threeMapRef.value.highLightBuilding(bindBuildingNameENG, type, isRecoverOther, isTransparentOther)
 }
-const quitHighLightBuilding = () => {
-  // if (isIngTopoHighLight === true) {
-  //   threeMapRef.value.quitHighLightTopo()
-  //   isIngTopoHighLight = false
-  // }
-  threeMapRef.value.quitHighLightTopo()
-}
+
 // 获取未读通知数量并按等级统计
 const getNotificationsCounts = async () => {
   try {
     const response = await getUnreadCountByLevel() // 假设你需要传递用户ID
-    if (response) {
-      notificationCountByLevel.value.errorCount = response.data.byLevel.error || 0
-      notificationCountByLevel.value.warningCount = response.data.byLevel.warning || 0
-      notificationCountByLevel.value.normalCount = response.data.byLevel.normal || 0 // 假设你有信息类型的日志
-      notificationCountByLevel.value.successCount = response.data.byLevel.success || 0
-      notificationCountByLevel.value.totalCount = response.data.byLevel.total || 0
 
-      notificationCountByLocation.value = response.data.byLocation
-      console.log(notificationCountByLocation.value)
-    }
+    notificationCountByLevel.value.errorCount = response.data.byLevel.error || 0
+    notificationCountByLevel.value.warningCount = response.data.byLevel.warning || 0
+    notificationCountByLevel.value.normalCount = response.data.byLevel.normal || 0 // 假设你有信息类型的日志
+    notificationCountByLevel.value.successCount = response.data.byLevel.success || 0
+    notificationCountByLevel.value.totalCount = response.data.byLevel.total || 0
+
+    notificationCountByLocation.value = response.data.byLocation
+
+    nextTick(() => {
+      threeMapRef.value.quitHighLightBuilding()
+    })
   } catch (error) {
     console.error('获取数据失败', error)
   }

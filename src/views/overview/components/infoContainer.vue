@@ -1,13 +1,15 @@
 <template>
   <div class="infoContainer">
-    <div class="greeting">{{ greeting }}，{{ accoutInfo.nickname }}。</div>
+    <div class="greeting">😊{{ greeting }}，{{ accoutInfo.nickname }}。</div>
+
     <div>
       <el-button type="primary" round icon="BrushFilled" @click="handleMarkAllAsRead"
-        >通知：{{
-          props.notificationCountByLevel.totalCount === 0 ? '暂无更多通知' : '一键已读所有通知'
+        >通知计数：{{
+          props.notificationCountByLevel.totalCount === 0 ? '暂无更多' : '一键已读'
         }}</el-button
       >
     </div>
+
     <div>
       <el-row :gutter="10">
         <el-col :span="12">
@@ -48,16 +50,19 @@
         </el-col>
       </el-row>
     </div>
-    <div class="notificationCard default">
+
+    <!-- <div class="buildingCount">
       <el-icon class="icon" size="60"><OfficeBuilding /></el-icon>
       <div class="text">
         <div class="title">园区建筑数量：</div>
+
         <div class="count">{{ Object.keys(onlineDevicesCount).length }}</div>
+        <div class="title">栋</div>
       </div>
-    </div>
+    </div> -->
+
     <div class="card">
       <levelTitle type="h3" text="在线设备" style="margin-top: 0px"> </levelTitle>
-
       <el-row v-for="location in Object.keys(onlineDevicesCount)" class="onlineCountByLocation">
         <el-col :span="5">
           <div class="locationName">{{ location }}</div>
@@ -86,7 +91,7 @@
           </div>
         </el-col>
       </el-row>
-      <el-row>
+      <el-row :gutter="13">
         <el-col :span="8">
           <div class="timeCard">
             <div class="timeNum">{{ timeCount.hours }}</div>
@@ -116,6 +121,7 @@ import { markAsReadByDefalutFilter } from '@/api/http/overview'
 import { useRouter } from 'vue-router'
 import { useDevicesStore } from '@/stores/devices'
 import { useAccoutStore } from '@/stores/accout'
+import { ElMessage } from 'element-plus'
 const devicesStore = useDevicesStore()
 
 const emits = defineEmits(['updateNotification'])
@@ -155,7 +161,10 @@ const onlineDevicesCount = ref<
 // 处理一键已读
 const handleMarkAllAsRead = async () => {
   try {
-    if (props.notificationCountByLevel.totalCount === 0) return
+    if (props.notificationCountByLevel.totalCount === 0) {
+      ElMessage('暂无未读消息')
+      return
+    }
     const response = await markAsReadByDefalutFilter() // 调用API来标记为已读
     if (response.type === 'success') {
       emits('updateNotification')
@@ -170,8 +179,6 @@ const handleMarkAllAsRead = async () => {
 watch(
   devicesStore.getDevicesListByLocation,
   (newVal) => {
-    console.log(newVal.value)
-
     const result: Record<string, { online: number; total: number; percentage: number }> = {}
 
     for (const key in newVal.value) {
@@ -216,22 +223,21 @@ watch(
     overflow: hidden;
     .icon {
       position: absolute;
-      left: -10px;
-      bottom: -18px;
+      left: -8px;
+      bottom: -16px;
     }
     .text {
+      font-weight: bolder;
       height: 50px;
       display: flex;
       justify-content: space-between;
       padding: 8px;
       color: rgb(255, 255, 255);
       .title {
-        font-weight: bolder;
         margin-left: 3px;
-        letter-spacing: 5px;
+        letter-spacing: 3px;
       }
       .count {
-        font-weight: bolder;
         font-size: 40px;
         text-align: right;
       }
@@ -261,37 +267,50 @@ watch(
       rgba(245, 108, 108, 0.2) 0px 12px 32px 4px,
       rgba(245, 108, 108, 0.3) 0px 8px 20px 0px;
   }
-  .notificationCard.default {
+  .buildingCount {
     background-color: var(--background-white-transparent-1);
+    border-radius: var(--el-border-radius-base);
     box-shadow: var(--el-box-shadow);
     backdrop-filter: blur(15px);
+    height: 800px;
     .text {
-      color: var(--Secondary-Text);
+      height: 50px;
+      display: flex;
+      justify-content: space-evenly;
+      padding: 8px;
+      color: var(--Regular-Text);
+      line-height: 50px;
+      font-size: 20px;
       .title {
-        line-height: 50px;
-        font-size: 20px;
-        margin-left: 20px;
+        letter-spacing: 5px;
+        margin-left: 5px;
       }
       .count {
-        margin-right: 13px;
+        color: #409eff;
+        font-weight: bolder;
+        font-size: 21px;
+        line-height: 52px;
       }
     }
     .icon {
-      color: var(--Darker-Fill);
+      position: absolute;
+      color: #40a0ff33;
       z-index: -1;
-      left: 0px;
+      left: 5px;
       bottom: -8px;
     }
   }
+
   .card {
     background-color: var(--background-white-transparent-1);
     backdrop-filter: blur(15px);
     box-shadow: var(--el-box-shadow);
     border-radius: var(--el-border-radius-base);
-    padding: 10px;
+    padding: 13px;
   }
+
   .onlineCountByLocation {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     .locationName {
       font-size: 11px;
       line-height: 13px;
@@ -311,6 +330,7 @@ watch(
   .onlineCountByLocation:last-of-type {
     margin-bottom: 0px;
   }
+
   .runningTimeCount {
     .text {
       font-size: 13px;
@@ -321,8 +341,7 @@ watch(
       position: relative;
       background-color: var(--Dark-Fill);
       border-radius: var(--el-border-radius-base);
-      margin: 10px;
-      height: 80px;
+      margin-top: 10px;
     }
     .timeUnit {
       position: absolute;

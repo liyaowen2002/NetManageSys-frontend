@@ -40,12 +40,9 @@
       </div>
       <el-empty description="暂无设备" v-if="Object.keys(devicesList).length === 0" />
     </el-scrollbar>
-  </div>
-  <AddDeviceDrawer ref="addDeviceDrawer" @addDevice_sure="addDevice_sure"></AddDeviceDrawer>
-  <ConfirmDialog ref="confirmDialog"></ConfirmDialog>
 
-  <!-- 刷新 -->
-  <!-- <el-backtop
+    <!-- 刷新 -->
+    <!-- <el-backtop
     :right="180"
     :bottom="100"
     :visibility-height="0"
@@ -55,50 +52,54 @@
     <el-icon :size="20"><Refresh /></el-icon>
   </el-backtop> -->
 
-  <!-- 新增设备 -->
-  <div v-auth="'administrator'">
-    <el-backtop
-      :right="120"
-      :bottom="100"
-      :visibility-height="0"
-      @click="() => (addDeviceDrawer.drawerVisible = true)"
-      v-show="isRemoving === false"
-    >
-      <el-icon :size="20"><Plus /></el-icon>
-    </el-backtop>
+    <!-- 新增设备 -->
+    <div v-auth="'administrator'">
+      <el-backtop
+        :right="120"
+        :bottom="100"
+        :visibility-height="0"
+        @click="() => (addDeviceDrawer.drawerVisible = true)"
+        v-show="isRemoving === false"
+      >
+        <el-icon :size="20"><Plus /></el-icon>
+      </el-backtop>
 
-    <!-- 移除设备 -->
-    <el-backtop
-      :right="60"
-      :bottom="100"
-      :visibility-height="0"
-      @click="() => (isRemoving = true)"
-      v-show="isRemoving === false"
-    >
-      <el-icon :size="20" color="#F56C6C"><Delete /></el-icon>
-    </el-backtop>
+      <!-- 移除设备 -->
+      <el-backtop
+        :right="60"
+        :bottom="100"
+        :visibility-height="0"
+        @click="() => (isRemoving = true)"
+        v-show="isRemoving === false"
+      >
+        <el-icon :size="20" color="#F56C6C"><Delete /></el-icon>
+      </el-backtop>
 
-    <!-- 确认移除 -->
-    <el-backtop
-      :right="60"
-      :bottom="100"
-      :visibility-height="0"
-      v-show="isRemoving === true"
-      @click="removeDevices()"
-    >
-      <el-icon :size="20" color="#F56C6C"><Check /></el-icon>
-    </el-backtop>
+      <!-- 确认移除 -->
+      <el-backtop
+        :right="60"
+        :bottom="100"
+        :visibility-height="0"
+        v-show="isRemoving === true"
+        @click="removeDevices()"
+      >
+        <el-icon :size="20" color="#F56C6C"><Check /></el-icon>
+      </el-backtop>
 
-    <!-- 取消移除 -->
-    <el-backtop
-      :right="120"
-      :bottom="100"
-      :visibility-height="0"
-      v-show="isRemoving === true"
-      @click="quitRemoving()"
-    >
-      <el-icon :size="20" color="#F56C6C"><Close /></el-icon>
-    </el-backtop>
+      <!-- 取消移除 -->
+      <el-backtop
+        :right="120"
+        :bottom="100"
+        :visibility-height="0"
+        v-show="isRemoving === true"
+        @click="quitRemoving()"
+      >
+        <el-icon :size="20" color="#F56C6C"><Close /></el-icon>
+      </el-backtop>
+    </div>
+
+    <AddDeviceDrawer ref="addDeviceDrawer" @addDevice_sure="addDevice_sure"></AddDeviceDrawer>
+    <ConfirmDialog ref="confirmDialog"></ConfirmDialog>
   </div>
 </template>
 

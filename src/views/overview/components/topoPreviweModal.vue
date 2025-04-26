@@ -56,10 +56,6 @@ const getTopoData = async () => {
       }
     })
 
-    console.log('拓扑数据加载完成')
-    console.log('Nodes:', nodes.get())
-    console.log('Edges:', edges.get())
-
     // 数据加载完成后，将图居中显示
     if (network.value) {
       network.value.fit()
@@ -91,7 +87,7 @@ onMounted(() => {
   network.value.on('hoverNode', (params) => {
     const nodeData = nodes.get(params.node) // 获取完整节点数据
     if (nodeData.bindBuildingNameENG !== null)
-      emits('highLightBuilding', nodeData.bindBuildingNameENG)
+      emits('highLightBuilding', nodeData.bindBuildingNameENG, 'select', true, true)
   })
   network.value.on('blurNode', () => {
     emits('quitHighLightBuilding')

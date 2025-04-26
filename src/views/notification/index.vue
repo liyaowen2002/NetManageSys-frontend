@@ -4,10 +4,10 @@
       <el-form :model="filter" class="filter-form">
         <el-row :gutter="20">
           <el-col :span="8">
-            <el-form-item label="内容" prop="content">
+            <el-form-item label="通知内容" prop="content">
               <el-input v-model="filter.content" placeholder="请输入内容" clearable />
             </el-form-item>
-            <el-form-item label="状态">
+            <el-form-item label="通知状态">
               <el-select v-model="filter.isRead" placeholder="请选择状态" clearable>
                 <el-option label="全部" value="all" />
                 <el-option label="未读" value="unread" />
@@ -16,10 +16,10 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="设备" prop="device">
+            <el-form-item label="关联设备" prop="device">
               <el-input v-model="filter.device" placeholder="请输入设备名称" clearable />
             </el-form-item>
-            <el-form-item label="时间">
+            <el-form-item label="通知时间">
               <el-date-picker
                 v-model="filter.time"
                 type="daterange"
@@ -32,7 +32,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="等级" prop="level">
+            <el-form-item label="紧急等级" prop="level">
               <el-select v-model="filter.level" placeholder="请选择等级" clearable>
                 <el-option label="错误" value="error" />
                 <el-option label="警告" value="warning" />
@@ -40,7 +40,7 @@
                 <el-option label="普通" value="normal" />
               </el-select>
             </el-form-item>
-            <el-form-item label="位置" prop="location">
+            <el-form-item label="关联位置" prop="location">
               <el-select v-model="filter.location" placeholder="请选择位置" clearable>
                 <el-option
                   v-for="building in Object.keys(buildingNameENGtoCHN)"
@@ -65,6 +65,7 @@
       <el-table :data="tableData" v-loading="loading" size="small" :border="true">
         <el-table-column label="序号" type="index" width="80" align="center" />
         <el-table-column label="时间" prop="time" width="230" align="center" />
+        <el-table-column label="操作者" prop="operator" width="120" align="center" />
         <el-table-column label="设备" prop="deviceName" width="120" align="center" />
         <el-table-column label="位置" prop="nameCHN" width="120" align="center" />
         <el-table-column label="内容" prop="content" align="center" />
@@ -78,7 +79,7 @@
                     ? 'warning'
                     : row.level === 'error'
                       ? 'danger'
-                      : 'default'
+                      : 'info'
               "
             >
               {{
@@ -110,15 +111,15 @@
     </div>
 
     <!-- 分页 -->
-    <div class="pagination">
-      <el-pagination
-        :page-size="pageSize"
-        :current-page="currentPage"
-        :total="totalItems"
-        @current-change="handlePageChange"
-        layout="total, prev, pager, next"
-      />
-    </div>
+
+    <el-pagination
+      class="pagination"
+      :page-size="pageSize"
+      :current-page="currentPage"
+      :total="totalItems"
+      @current-change="handlePageChange"
+      layout="total, prev, pager, next"
+    />
   </div>
 </template>
 
@@ -248,6 +249,7 @@ fetchTableData()
 }
 .pagination {
   margin-top: 20px;
-  text-align: center;
+  display: flex;
+  justify-content: center;
 }
 </style>

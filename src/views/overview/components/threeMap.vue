@@ -17,6 +17,13 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import * as TWEEN from 'three/examples/jsm/libs/tween.module.js' // 用于平滑动画过渡
 
+const props = defineProps({
+  notificationCountByLocation: {
+    type: Object,
+    required: true,
+  },
+})
+
 const sceneContainer = ref() // 这是挂载Three.js场景的容器
 let scene: InstanceType<THREE.Scene>,
   camera: InstanceType<THREE.PerspectiveCamera>,
@@ -26,12 +33,15 @@ let scene: InstanceType<THREE.Scene>,
 const raycaster = new THREE.Raycaster() // 用于射线投射
 const mouse = new THREE.Vector2() // 用于存储鼠标的坐标
 
-// 当前点击的物体
+// 当前点击的物体，null代表现在没有选择物体和不在看建筑
 const currentClickObject = ref(null)
-// 保存上一个点击物体的原始材质
-let previousMaterial: null | InstanceType<THREE.material> = null
+
+// 贴图
 const normalTexture = new THREE.TextureLoader().load('/matcap/normal.png')
 const seletedTexture = new THREE.TextureLoader().load('/matcap/blue.png')
+const errorTexture = new THREE.TextureLoader().load('/matcap/red.png')
+const warningTexture = new THREE.TextureLoader().load('/matcap/orange.png')
+
 const emits = defineEmits([
   'closeModalAndExitView',
   'openModal',
@@ -48,7 +58,7 @@ const initThreeJS = () => {
     0.1,
     1000,
   )
-  camera.position.copy(initialCameraPosition)
+  camera.position.copy(initialCamera.position)
 
   renderer = new THREE.WebGLRenderer({
     alpha: true,
@@ -63,18 +73,17 @@ const initThreeJS = () => {
   controls.enableDamping = true
   controls.screenSpacePanning = false
   controls.maxPolarAngle = Math.PI / 2
-  controls.target.copy(initialControlTarget)
+  controls.target.copy(initialCamera.target)
 
   const loader = new GLTFLoader()
   loader.load(
     '/model.glb',
     (gltf) => {
       model = gltf.scene
-      const matcapTexture = new THREE.TextureLoader().load('/matcap/normal.png')
 
       model.traverse((child) => {
         if (child.isMesh) {
-          child.material = new THREE.MeshMatcapMaterial({ matcap: matcapTexture })
+          child.material = new THREE.MeshMatcapMaterial({ matcap: normalTexture })
           child.material.transparent = true
         }
       })
@@ -129,52 +138,25 @@ const onMouseClick = (event) => {
 
   if (intersects.length > 0) {
     const clickedObject = intersects[0].object
+    if (!currentClickObject.value) {
+      emits('openModal')
+    }
+    // 如果点的不是当前建筑
     if (currentClickObject.value !== clickedObject.userData.name) {
       controls.enableRotate = false
       controls.enablePan = false
       controls.enableZoom = false
 
-      // 这里判断previousMaterial是否存在，可以作为是否为连续切换的判断
-      // 恢复上个点击的建筑贴图
-      if (previousMaterial) {
-        clickedObject.material.opacity = 1
-        previousMaterial.matcap = normalTexture
-        // emits('switchBuilding')
-      } else {
-        // 打开弹窗
-        emits('openModal')
-      }
-      // 将当前建筑更新到previousMaterial
-      previousMaterial = clickedObject.material
-      const newMatcapTexture = seletedTexture
-      if (clickedObject.material instanceof THREE.MeshMatcapMaterial) {
-        clickedObject.material.matcap = newMatcapTexture
-      }
-
       // 改状态标识的
       currentClickObject.value = clickedObject.userData.name
-      // 动画
-      const position = cameraPositions[currentClickObject.value].position || initialCameraPosition
-      const target = cameraPositions[currentClickObject.value].target || initialCameraPosition
-      new TWEEN.Tween(camera.position)
-        .to(position, 1000) // 动画持续 1 秒
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .start()
-      new TWEEN.Tween(controls.target).to(target, 1000).easing(TWEEN.Easing.Quadratic.InOut).start()
-      // 透明度动画
-      model.traverse((child) => {
-        if (child.name !== currentClickObject.value && child.isMesh) {
-          new TWEEN.Tween(child.material)
-            .to({ opacity: 0.5 }, 500) // 动画持续时间为 1 秒
-            .easing(TWEEN.Easing.Quadratic.InOut)
-            .start()
-        }
-      })
+
+      highLightBuilding(currentClickObject.value, 'select', true, true)
+      moveLens(currentClickObject.value)
       emits('getInfoToUpdate', currentClickObject.value)
     }
   } else {
-    exitViewBuilding()
-    emits('closeModalOnly')
+    // 等于直接调exitViewBuilding
+    emits('closeModalAndExitView')
     // 恢复控制器
     controls.enableRotate = true
     controls.enablePan = true
@@ -183,68 +165,86 @@ const onMouseClick = (event) => {
 }
 
 const exitViewBuilding = () => {
-  currentClickObject.value = null
-  // 改回材质为普通材质，透明度恢复
-  if (previousMaterial) {
-    previousMaterial.matcap = normalTexture
-    previousMaterial = null
+  if (currentClickObject.value) {
+    quitHighLightBuilding()
+    currentClickObject.value = null
   }
-  // 动画
-  model.traverse((child) => {
-    if (child.name !== currentClickObject.value && child.isMesh) {
-      new TWEEN.Tween(child.material)
-        .to({ opacity: 1 }, 500) // 动画持续时间为 1 秒
-        .easing(TWEEN.Easing.Quadratic.InOut)
-        .start()
-    }
-  })
-  if (!currentClickObject.value) {
-    new TWEEN.Tween(camera.position)
-      .to(initialCameraPosition, 1000)
-      .easing(TWEEN.Easing.Quadratic.InOut)
-      .start()
-    // 同时恢复相机的观察目标
-    new TWEEN.Tween(controls.target)
-      .to(initialControlTarget, 1000) // 假设你希望目标恢复为原点
-      .easing(TWEEN.Easing.Quadratic.InOut)
-      .start()
-  }
+  moveLens('init')
 }
 
-const enterTopoView = () => {
-  new TWEEN.Tween(camera.position)
-    .to(topoPreviewCameraPosition, 1000) // 动画持续 1 秒
-    .easing(TWEEN.Easing.Quadratic.InOut)
-    .start()
-  new TWEEN.Tween(controls.target)
-    .to(topoPreviewControlTarget, 1000)
-    .easing(TWEEN.Easing.Quadratic.InOut)
-    .start()
-}
-const leaveTopoView = () => {
-  new TWEEN.Tween(camera.position)
-    .to(initialCameraPosition, 1000) // 动画持续 1 秒
-    .easing(TWEEN.Easing.Quadratic.InOut)
-    .start()
-  new TWEEN.Tween(controls.target)
-    .to(initialControlTarget, 1000)
-    .easing(TWEEN.Easing.Quadratic.InOut)
-    .start()
-}
-const highLightTopo = (buildingName: string) => {
+// 这里改颜色和透明度
+const highLightBuilding = (
+  buildingName: string,
+  type: string,
+  isRecoverOther: boolean,
+  isTransparentOther: boolean,
+) => {
   model.traverse((child) => {
     if (child.isMesh)
       if (child.name === buildingName) {
-        child.material.matcap = seletedTexture
+        // 根据传进来的需求，将点击的建筑变成对应的颜色
+        switch (type) {
+          case 'error':
+            child.material.matcap = errorTexture
+            break
+          case 'warning':
+            child.material.matcap = warningTexture
+            break
+          case 'select':
+            child.material.matcap = seletedTexture
+            break
+        }
+        // 将透明度变回1
+        if (child.material.opacity !== 1)
+          new TWEEN.Tween(child.material)
+            .to({ opacity: 1 }, 1000) // 动画持续时间为 1 秒
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .start()
       } else {
-        child.material.matcap = normalTexture
+        // 其他建筑的处理
+        if (isTransparentOther === true && child.material.opacity === 1)
+          new TWEEN.Tween(child.material)
+            .to({ opacity: 0.5 }, 500) // 动画持续时间为 1 秒
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .start()
+        if (isRecoverOther === true && child.material.matcap !== normalTexture)
+          child.material.matcap = normalTexture
       }
   })
 }
-const quitHighLightTopo = () => {
+// 这里恢复颜色和透明度
+const quitHighLightBuilding = () => {
   model.traverse((child) => {
-    if (child.isMesh) child.material.matcap = normalTexture
+    if (child.isMesh) {
+      // 根据通知恢复颜色
+      if (props.notificationCountByLocation[child.name]) {
+        if (props.notificationCountByLocation[child.name].error !== 0) {
+          child.material.matcap = errorTexture
+        } else if (props.notificationCountByLocation[child.name].warning !== 0) {
+          child.material.matcap = warningTexture
+        } else {
+          child.material.matcap = normalTexture
+        }
+      } else {
+        if (child.material.matcap !== normalTexture) child.material.matcap = normalTexture
+      }
+      // 恢复透明度
+      if (child.material.opacity !== 1) {
+        new TWEEN.Tween(child.material)
+          .to({ opacity: 1 }, 1000) // 动画持续时间为 1 秒
+          .easing(TWEEN.Easing.Quadratic.InOut)
+          .start()
+      }
+    }
   })
+}
+
+const enterTopoView = () => {
+  moveLens('topo')
+}
+
+const leaveTopoView = () => {
+  moveLens('init')
 }
 
 defineExpose({
@@ -252,9 +252,10 @@ defineExpose({
   currentClickObject,
   enterTopoView,
   leaveTopoView,
-  highLightTopo,
-  quitHighLightTopo,
+  highLightBuilding,
+  quitHighLightBuilding,
 })
+
 // Vue生命周期钩子
 onMounted(() => {
   initThreeJS()
@@ -271,46 +272,52 @@ onBeforeUnmount(() => {
   controls.dispose()
   renderer.dispose()
 })
-// 打印当前相机位置的调试按钮
-const logCameraPosition = () => {
-  console.log(`ps:${camera.position.x}, ${camera.position.y}, ${camera.position.z}`)
-  console.log(`ta:${controls.target.x}, ${controls.target.y}, ${controls.target.z}`)
+
+// 移动视角
+const moveLens = (target: string) => {
+  switch (target) {
+    case 'init':
+      new TWEEN.Tween(camera.position)
+        .to(initialCamera.position, 1000) // 动画持续 1 秒
+        .easing(TWEEN.Easing.Quadratic.InOut)
+        .start()
+      new TWEEN.Tween(controls.target)
+        .to(initialCamera.target, 1000)
+        .easing(TWEEN.Easing.Quadratic.InOut)
+        .start()
+      break
+    case 'topo':
+      new TWEEN.Tween(camera.position)
+        .to(topoPreview.position, 1000) // 动画持续 1 秒
+        .easing(TWEEN.Easing.Quadratic.InOut)
+        .start()
+      new TWEEN.Tween(controls.target)
+        .to(topoPreview.target, 1000)
+        .easing(TWEEN.Easing.Quadratic.InOut)
+        .start()
+      break
+    default:
+      new TWEEN.Tween(camera.position)
+        .to(cameraPositions[target].position || initialCamera.position, 1000) // 动画持续 1 秒
+        .easing(TWEEN.Easing.Quadratic.InOut)
+        .start()
+      new TWEEN.Tween(controls.target)
+        .to(cameraPositions[target].target || initialCamera.target, 1000)
+        .easing(TWEEN.Easing.Quadratic.InOut)
+        .start()
+  }
 }
-
-const logCameraPosition1 = () => {
-  new TWEEN.Tween(camera.position)
-    .to(initialCameraPosition, 1000)
-    .easing(TWEEN.Easing.Quadratic.InOut)
-    .start()
-
-  // 同时恢复相机的观察目标
-  new TWEEN.Tween(controls.target)
-    .to(initialControlTarget, 1000) // 假设你希望目标恢复为原点
-    .easing(TWEEN.Easing.Quadratic.InOut)
-    .start()
-}
-
 // 记录相机的初始位置
-const initialCameraPosition = new THREE.Vector3(
-  29.290220800069466,
-  14.061901117329162,
-  50.88461172337492,
-)
-const initialControlTarget = new THREE.Vector3(
-  -10.512317143425424,
-  1.2875717440579088e-17,
-  -6.3301983709749825,
-)
-const topoPreviewCameraPosition = new THREE.Vector3(
-  38.31714849431559,
-  14.061901117329148,
-  45.02112573770271,
-)
-const topoPreviewControlTarget = new THREE.Vector3(
-  -1.4853894491792674,
-  2.1132851890142737e-16,
-  -12.19368435664707,
-)
+const initialCamera = {
+  position: new THREE.Vector3(29.290220800069466, 14.061901117329162, 50.88461172337492),
+  target: new THREE.Vector3(-10.512317143425424, 1.2875717440579088e-17, -6.3301983709749825),
+}
+
+const topoPreview = {
+  position: new THREE.Vector3(38.31714849431559, 14.061901117329148, 45.02112573770271),
+  target: new THREE.Vector3(-1.4853894491792674, 2.1132851890142737e-16, -12.19368435664707),
+}
+
 // 存储所有模型的最佳观看相机位置
 const cameraPositions = {
   tower: {
@@ -358,6 +365,24 @@ const cameraPositions = {
     target: new THREE.Vector3(-7.5091362150995415, 1.6210883898202334e-16, 2.577323823948615),
   },
 }
+// // 打印当前相机位置的调试按钮
+// const logCameraPosition = () => {
+//   console.log(`ps:${camera.position.x}, ${camera.position.y}, ${camera.position.z}`)
+//   console.log(`ta:${controls.target.x}, ${controls.target.y}, ${controls.target.z}`)
+// }
+
+// const logCameraPosition1 = () => {
+//   new TWEEN.Tween(camera.position)
+//     .to(initialCameraPosition, 1000)
+//     .easing(TWEEN.Easing.Quadratic.InOut)
+//     .start()
+
+//   // 同时恢复相机的观察目标
+//   new TWEEN.Tween(controls.target)
+//     .to(initialControlTarget, 1000) // 假设你希望目标恢复为原点
+//     .easing(TWEEN.Easing.Quadratic.InOut)
+//     .start()
+// }
 </script>
 
 <style scoped>

@@ -234,8 +234,9 @@ defineExpose({ beforeUpload })
   flex: 1;
   overflow: auto;
   width: 100%;
-  background-image: linear-gradient(var(--Base-Border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--Base-Border) 1px, transparent 1px);
-  background-size: 25px 25px;
+  // background-image: linear-gradient(var(--Base-Border) 1px, transparent 1px),
+  //   linear-gradient(90deg, var(--Base-Border) 1px, transparent 1px);
+  // background-size: 25px 25px;
+  background-image: url(topoBG.svg);
 }
 </style>

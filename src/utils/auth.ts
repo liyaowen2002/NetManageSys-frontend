@@ -4,7 +4,6 @@ import { jwtDecode } from 'jwt-decode'
 export function getPermissionsFromToken(token) {
   try {
     const decoded = jwtDecode(token)
-    console.log(decoded)
     return decoded.role || [] // 假设权限信息存储在 JWT 的 permissions 字段中
   } catch (error) {
     console.error('解析 JWT 失败:', error)
