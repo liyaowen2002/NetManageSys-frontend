@@ -296,7 +296,7 @@ const handleSaveEdit = async () => {
     })
     const res = await updateTopo([...processedNodes, ...allEdges]) // 调用 API 进行保存
     if (res.type === 'success') {
-      await getTopoData()
+      // await getTopoData()
     }
   } catch (err) {
     console.log(err)
